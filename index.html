@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>Québec Urban Trees K-NN Dashboard</title>
+  <title>Québec Urban Trees K-N-N Dashboard</title>
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
@@ -13,6 +13,7 @@
       --bg: #07111f;
       --panel: #0f1b2d;
       --panel-2: #13233a;
+      --panel-3: #192943;
       --text: #e8f1ff;
       --muted: #9fb3c8;
       --line: #2a3c55;
@@ -21,17 +22,22 @@
       --orange: #ffb454;
       --red: #ff6b7a;
       --shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+      --soft-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
       --map-border: #2a3c55;
+      --header-height: 64px;
+      --sidebar-width: 348px;
     }
 
     body.light-theme {
       --bg: #f4f7fb;
       --panel: #ffffff;
       --panel-2: #edf3fb;
+      --panel-3: #e5edf7;
       --text: #172033;
       --muted: #5d6f86;
       --line: #d8e1ee;
       --shadow: 0 14px 34px rgba(23, 32, 51, 0.12);
+      --soft-shadow: 0 8px 22px rgba(23, 32, 51, 0.10);
       --map-border: #cfd9e6;
     }
 
@@ -39,8 +45,13 @@
       box-sizing: border-box;
     }
 
+    html,
     body {
       margin: 0;
+      min-height: 100%;
+    }
+
+    body {
       font-family: Inter, Segoe UI, Roboto, Arial, sans-serif;
       color: var(--text);
       background: var(--bg);
@@ -54,10 +65,11 @@
     }
 
     header {
-      height: 60px;
+      height: var(--header-height);
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 14px;
       padding: 0 18px;
       background: var(--bg);
       border-bottom: 1px solid var(--line);
@@ -131,8 +143,8 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      box-shadow: var(--shadow);
-      transition: transform 0.16s ease, border-color 0.16s ease;
+      box-shadow: var(--soft-shadow);
+      transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
     }
 
     .icon-btn:hover {
@@ -141,9 +153,9 @@
     }
 
     .layout {
-      height: calc(100vh - 60px);
+      height: calc(100vh - var(--header-height));
       display: grid;
-      grid-template-columns: 340px 1fr;
+      grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
     }
 
     aside.sidebar {
@@ -159,7 +171,7 @@
       border-radius: 18px;
       padding: 15px;
       margin-bottom: 14px;
-      box-shadow: var(--shadow);
+      box-shadow: var(--soft-shadow);
     }
 
     body.light-theme .panel {
@@ -183,24 +195,32 @@
       margin-bottom: 14px;
     }
 
+    .filter-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 11px;
+    }
+
     label {
       display: block;
       font-size: 12px;
       color: var(--text);
-      margin: 12px 0 7px;
+      margin: 0 0 7px;
       font-weight: 750;
     }
 
     select,
     input {
       width: 100%;
+      min-height: 42px;
       padding: 10px 11px;
-      border-radius: 11px;
+      border-radius: 12px;
       border: 1px solid var(--line);
       background: var(--panel-2);
       color: var(--text);
       outline: none;
       font-weight: 650;
+      font-size: 13px;
     }
 
     select:focus,
@@ -209,39 +229,15 @@
       box-shadow: 0 0 0 3px rgba(43, 216, 132, 0.16);
     }
 
-    .main-btn {
-      width: 100%;
-      padding: 12px 14px;
-      border: 0;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #1f8fff, #2bd884);
-      color: #04111f;
-      font-weight: 900;
-      cursor: pointer;
-      margin-top: 14px;
-      transition: transform 0.16s ease, box-shadow 0.16s ease;
-    }
-
-    .secondary-btn {
-      width: 100%;
-      padding: 11px 14px;
-      border-radius: 12px;
-      background: var(--panel-2);
-      color: var(--text);
-      border: 1px solid var(--line);
-      font-weight: 800;
-      cursor: pointer;
-      margin-top: 10px;
-      transition: transform 0.16s ease, border-color 0.16s ease;
-    }
-
-    .main-btn:hover,
-    .secondary-btn:hover {
-      transform: translateY(-1px);
-    }
-
-    .secondary-btn:hover {
-      border-color: var(--green);
+    .auto-note {
+      margin-top: 12px;
+      padding: 10px 11px;
+      border-radius: 14px;
+      background: rgba(43, 216, 132, 0.08);
+      border: 1px solid rgba(43, 216, 132, 0.22);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
     }
 
     .kpis {
@@ -253,7 +249,7 @@
     .kpi {
       background: var(--panel-2);
       border: 1px solid var(--line);
-      border-radius: 12px;
+      border-radius: 14px;
       padding: 12px;
     }
 
@@ -261,6 +257,7 @@
       display: block;
       font-size: 23px;
       letter-spacing: -0.04em;
+      line-height: 1.1;
     }
 
     .kpi span {
@@ -277,8 +274,9 @@
 
     main {
       display: grid;
-      grid-template-rows: minmax(0, 1fr) 245px;
+      grid-template-rows: minmax(0, 1fr) 255px;
       min-width: 0;
+      min-height: 0;
     }
 
     .map-wrap {
@@ -332,7 +330,7 @@
       left: 18px;
       top: 18px;
       z-index: 500;
-      max-width: 560px;
+      max-width: 570px;
       background: rgba(15, 27, 45, 0.94);
       border: 1px solid rgba(255,255,255,0.12);
       border-radius: 18px;
@@ -374,6 +372,30 @@
       font-weight: 800;
     }
 
+    .mobile-map-hint {
+      display: none;
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: 12px;
+      z-index: 500;
+      background: rgba(15, 27, 45, 0.94);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: #e8f1ff;
+      border-radius: 16px;
+      padding: 11px 13px;
+      font-size: 12px;
+      line-height: 1.4;
+      box-shadow: var(--shadow);
+      pointer-events: none;
+    }
+
+    body.light-theme .mobile-map-hint {
+      background: rgba(255,255,255,0.94);
+      color: #172033;
+      border: 1px solid #d8e1ee;
+    }
+
     .legend {
       position: absolute;
       right: 16px;
@@ -410,7 +432,7 @@
 
     .bottom {
       display: grid;
-      grid-template-columns: 1.2fr 1fr 1fr;
+      grid-template-columns: 1.22fr 1fr 1fr;
       gap: 14px;
       padding: 14px;
       background: var(--bg);
@@ -423,7 +445,8 @@
       border-radius: 18px;
       padding: 14px;
       overflow-y: auto;
-      box-shadow: var(--shadow);
+      box-shadow: var(--soft-shadow);
+      min-width: 0;
     }
 
     .card h3 {
@@ -648,71 +671,205 @@
       display: block;
     }
 
-    @media (max-width: 1050px) {
+    @media (max-width: 1180px) {
+      :root {
+        --sidebar-width: 320px;
+      }
+
+      .bottom {
+        grid-template-columns: 1fr 1fr;
+        grid-auto-rows: minmax(180px, auto);
+      }
+
+      .bottom .card:first-child {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (max-width: 900px) {
       body {
         overflow: auto;
       }
 
       header {
+        position: sticky;
+        top: 0;
         height: auto;
-        min-height: 60px;
+        min-height: var(--header-height);
         padding: 10px 14px;
         align-items: flex-start;
       }
 
+      .brand {
+        align-items: flex-start;
+      }
+
+      .brand-dot {
+        margin-top: 5px;
+      }
+
+      .brand-title {
+        white-space: normal;
+        font-size: 15px;
+        line-height: 1.2;
+      }
+
+      .brand-subtitle {
+        display: none;
+      }
+
+      .status {
+        display: none;
+      }
+
+      .icon-btn {
+        width: 40px;
+        height: 40px;
+      }
+
       .layout {
-        grid-template-columns: 1fr;
+        display: block;
         height: auto;
       }
 
       aside.sidebar {
-        height: auto;
         border-right: 0;
         border-bottom: 1px solid var(--line);
+        padding: 12px;
+      }
+
+      .panel {
+        border-radius: 16px;
+        margin-bottom: 12px;
+      }
+
+      .filter-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .filter-grid .wide {
+        grid-column: 1 / -1;
+      }
+
+      .auto-note {
+        margin-top: 12px;
       }
 
       main {
-        grid-template-rows: 70vh auto;
+        display: block;
       }
 
-      .bottom {
-        grid-template-columns: 1fr;
+      .map-wrap {
+        height: 62vh;
+        min-height: 440px;
+        border-bottom: 1px solid var(--line);
       }
 
       .map-guide {
         display: none;
       }
 
-      .legend {
-        top: 14px;
-        right: 14px;
+      .mobile-map-hint {
+        display: block;
       }
 
-      .brand-subtitle {
-        display: none;
+      .legend {
+        top: 12px;
+        right: 12px;
+        font-size: 11px;
+        padding: 9px 10px;
+      }
+
+      .bottom {
+        display: grid;
+        grid-template-columns: 1fr;
+        padding: 12px;
+        gap: 12px;
+        overflow: visible;
+      }
+
+      .card {
+        max-height: none;
+        overflow: visible;
+      }
+
+      .card:first-child {
+        order: 1;
+      }
+
+      .card:nth-child(2) {
+        order: 2;
+      }
+
+      .card:nth-child(3) {
+        order: 3;
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
       }
     }
 
-    @media (max-width: 560px) {
-      .status {
-        display: none;
+    @media (max-width: 620px) {
+      header {
+        padding: 9px 12px;
       }
 
-      .brand-title {
-        font-size: 14px;
-        white-space: normal;
+      .header-actions {
+        gap: 7px;
       }
 
+      .icon-btn {
+        width: 38px;
+        height: 38px;
+        border-radius: 11px;
+      }
+
+      aside.sidebar {
+        padding: 10px;
+      }
+
+      .filter-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .kpis {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .map-wrap {
+        height: 58vh;
+        min-height: 390px;
+      }
+
+      .legend {
+        max-width: 160px;
+      }
+
+      .legend div {
+        margin: 3px 0;
+      }
+
+      .mobile-map-hint {
+        font-size: 11px;
+      }
+    }
+
+    @media (max-width: 420px) {
       .kpis {
         grid-template-columns: 1fr;
       }
 
-      .legend {
-        font-size: 11px;
+      .map-wrap {
+        height: 56vh;
+        min-height: 360px;
       }
 
-      main {
-        grid-template-rows: 62vh auto;
+      .legend {
+        display: none;
       }
     }
   </style>
@@ -746,32 +903,47 @@
 
         <h3>Paramètres</h3>
 
-        <label for="typeArbre">Type d’arbre</label>
-        <select id="typeArbre"></select>
+        <div class="filter-grid">
+          <div>
+            <label for="typeArbre">Type d’arbre</label>
+            <select id="typeArbre"></select>
+          </div>
 
-        <label for="typeLieu">Type de lieu</label>
-        <select id="typeLieu"></select>
+          <div>
+            <label for="typeLieu">Type de lieu</label>
+            <select id="typeLieu"></select>
+          </div>
 
-        <label for="typeProp">Type de propriété</label>
-        <select id="typeProp"></select>
+          <div>
+            <label for="typeProp">Type de propriété</label>
+            <select id="typeProp"></select>
+          </div>
 
-        <label for="species">Espèce</label>
-        <select id="species"></select>
+          <div>
+            <label for="species">Espèce</label>
+            <select id="species"></select>
+          </div>
 
-        <label for="diameterMin">Diamètre minimal</label>
-        <input id="diameterMin" type="number" placeholder="Ex. 20" />
+          <div>
+            <label for="diameterMin">Diamètre minimal</label>
+            <input id="diameterMin" type="number" placeholder="Ex. 20" />
+          </div>
 
-        <label for="kNeighbors">Nombre de voisins K</label>
-        <select id="kNeighbors">
-          <option value="5" selected>5 voisins</option>
-          <option value="10">10 voisins</option>
-          <option value="15">15 voisins</option>
-          <option value="20">20 voisins</option>
-          <option value="30">30 voisins</option>
-        </select>
+          <div>
+            <label for="kNeighbors">Nombre de voisins K</label>
+            <select id="kNeighbors">
+              <option value="5" selected>5 voisins</option>
+              <option value="10">10 voisins</option>
+              <option value="15">15 voisins</option>
+              <option value="20">20 voisins</option>
+              <option value="30">30 voisins</option>
+            </select>
+          </div>
+        </div>
 
-        <button id="applyFilters" class="main-btn">Appliquer les filtres</button>
-        <button id="resetFilters" class="secondary-btn">Réinitialiser</button>
+        <div class="auto-note">
+          Les filtres sont appliqués automatiquement dès qu’une valeur est modifiée.
+        </div>
       </div>
 
       <div class="panel">
@@ -829,11 +1001,15 @@
           <div class="map-hint">Survolez un arbre pour voir le détail · Cliquez pour le sélectionner</div>
         </div>
 
+        <div class="mobile-map-hint">
+          Touchez un arbre sur la carte pour le sélectionner comme référence K-NN.
+        </div>
+
         <div class="legend">
           <div><span class="dot" style="background:#2bd884"></span> Feuillu</div>
           <div><span class="dot" style="background:#4aa3ff"></span> Conifère</div>
-          <div><span class="dot" style="background:#ffb454"></span> Arbre sélectionné</div>
-          <div><span class="dot" style="background:#ff6b7a"></span> Arbres similaires</div>
+          <div><span class="dot" style="background:#ffb454"></span> Sélectionné</div>
+          <div><span class="dot" style="background:#ff6b7a"></span> Similaires</div>
         </div>
       </div>
 
@@ -880,9 +1056,10 @@
         <h3>Comment l’utiliser</h3>
         <ul>
           <li>Utilisez les filtres du panneau de gauche.</li>
+          <li>Les filtres s’appliquent automatiquement.</li>
           <li>Zoomez et déplacez-vous sur la carte.</li>
-          <li>Survolez un arbre pour obtenir un aperçu rapide.</li>
-          <li>Cliquez sur un arbre pour le sélectionner comme référence.</li>
+          <li>Survolez un arbre pour obtenir un aperçu rapide sur desktop.</li>
+          <li>Touchez ou cliquez sur un arbre pour le sélectionner comme référence.</li>
           <li>Consultez les arbres similaires dans le panneau du bas.</li>
         </ul>
       </section>
@@ -933,6 +1110,7 @@
     let filteredTrees = [];
     let selectedTreeId = null;
     let markersLayer = null;
+    let debounceTimer = null;
 
     const map = L.map("map", {
       preferCanvas: true
@@ -956,6 +1134,10 @@
     markersLayer = L.layerGroup().addTo(map);
 
     const statusEl = document.getElementById("status");
+
+    function isMobileViewport() {
+      return window.matchMedia("(max-width: 900px)").matches;
+    }
 
     function fmt(value, decimals = 0) {
       if (value === null || value === undefined || Number.isNaN(Number(value))) {
@@ -996,6 +1178,23 @@
       fillSelect("typeLieu", DATA.filters.type_lieu || [], "Tous");
       fillSelect("typeProp", DATA.filters.type_prop || [], "Toutes");
       fillSelect("species", DATA.filters.nom_francais || [], "Toutes");
+
+      const autoFields = [
+        "typeArbre",
+        "typeLieu",
+        "typeProp",
+        "species",
+        "kNeighbors"
+      ];
+
+      autoFields.forEach(id => {
+        document.getElementById(id).addEventListener("change", applyFilters);
+      });
+
+      document.getElementById("diameterMin").addEventListener("input", () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(applyFilters, 300);
+      });
     }
 
     function applyFilters() {
@@ -1022,21 +1221,10 @@
       renderBars();
       renderReference();
       renderMap();
-    }
 
-    function resetFilters() {
-      document.getElementById("typeArbre").value = "";
-      document.getElementById("typeLieu").value = "";
-      document.getElementById("typeProp").value = "";
-      document.getElementById("species").value = "";
-      document.getElementById("diameterMin").value = "";
-      selectedTreeId = null;
-      filteredTrees = [...trees];
-
-      updateKpis();
-      renderBars();
-      renderReference();
-      renderMap();
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 80);
     }
 
     function getNeighborIds() {
@@ -1052,19 +1240,33 @@
       selectedTreeId = id;
       renderReference();
       renderMap();
+
+      if (isMobileViewport()) {
+        document.getElementById("referenceInfo").scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+      }
     }
 
     function renderMap() {
       markersLayer.clearLayers();
 
       const neighborIds = getNeighborIds();
+      const mobile = isMobileViewport();
 
       filteredTrees.forEach(tree => {
         if (!tree.LATITUDE || !tree.LONGITUDE) return;
 
         const selected = tree.ID === selectedTreeId;
         const neighbor = neighborIds.has(tree.ID);
-        const baseRadius = selected ? 9 : neighbor ? 7 : 4;
+
+        const baseRadius = selected
+          ? mobile ? 11 : 9
+          : neighbor
+            ? mobile ? 9 : 7
+            : mobile ? 6 : 4;
+
         const baseColor = colorByType(tree.TYPE_ARBRE, selected, neighbor);
 
         const marker = L.circleMarker([tree.LATITUDE, tree.LONGITUDE], {
@@ -1072,7 +1274,7 @@
           color: baseColor,
           fillColor: baseColor,
           weight: selected || neighbor ? 3 : 1,
-          fillOpacity: selected || neighbor ? 0.95 : 0.55,
+          fillOpacity: selected || neighbor ? 0.95 : 0.58,
           interactive: true
         });
 
@@ -1125,7 +1327,7 @@
             color: baseColor,
             fillColor: baseColor,
             weight: selected || neighbor ? 3 : 1,
-            fillOpacity: selected || neighbor ? 0.95 : 0.55
+            fillOpacity: selected || neighbor ? 0.95 : 0.58
           });
 
           this.closeTooltip();
@@ -1296,18 +1498,17 @@
       }, 120);
     }
 
-    document.getElementById("applyFilters").addEventListener("click", applyFilters);
-    document.getElementById("resetFilters").addEventListener("click", resetFilters);
-
-    document.getElementById("kNeighbors").addEventListener("change", () => {
-      renderReference();
-      renderMap();
-    });
-
     document.getElementById("helpToggle").addEventListener("click", openHelp);
     document.getElementById("closeHelp").addEventListener("click", closeHelpPanel);
     document.getElementById("overlay").addEventListener("click", closeHelpPanel);
     document.getElementById("themeToggle").addEventListener("click", toggleTheme);
+
+    window.addEventListener("resize", () => {
+      setTimeout(() => {
+        map.invalidateSize();
+        renderMap();
+      }, 160);
+    });
 
     fetch("dashboard_data.json")
       .then(response => {
@@ -1345,7 +1546,7 @@
 
         setTimeout(() => {
           map.invalidateSize();
-        }, 150);
+        }, 200);
       })
       .catch(error => {
         statusEl.textContent = "JSON non généré";
