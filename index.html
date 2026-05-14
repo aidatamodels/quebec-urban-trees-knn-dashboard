@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>Québec Urban Trees K-NN Dashboard</title>
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -46,6 +47,12 @@
       overflow: hidden;
     }
 
+    button,
+    select,
+    input {
+      font-family: inherit;
+    }
+
     header {
       height: 60px;
       display: flex;
@@ -78,6 +85,8 @@
       font-weight: 850;
       letter-spacing: -0.02em;
       white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .brand-subtitle {
@@ -87,12 +96,15 @@
       font-weight: 600;
       margin-top: 3px;
       white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .header-actions {
       display: flex;
       align-items: center;
       gap: 10px;
+      flex: 0 0 auto;
     }
 
     .status {
@@ -120,10 +132,12 @@
       align-items: center;
       justify-content: center;
       box-shadow: var(--shadow);
+      transition: transform 0.16s ease, border-color 0.16s ease;
     }
 
     .icon-btn:hover {
       border-color: var(--green);
+      transform: translateY(-1px);
     }
 
     .layout {
@@ -189,6 +203,12 @@
       font-weight: 650;
     }
 
+    select:focus,
+    input:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(43, 216, 132, 0.16);
+    }
+
     .main-btn {
       width: 100%;
       padding: 12px 14px;
@@ -199,6 +219,7 @@
       font-weight: 900;
       cursor: pointer;
       margin-top: 14px;
+      transition: transform 0.16s ease, box-shadow 0.16s ease;
     }
 
     .secondary-btn {
@@ -211,6 +232,16 @@
       font-weight: 800;
       cursor: pointer;
       margin-top: 10px;
+      transition: transform 0.16s ease, border-color 0.16s ease;
+    }
+
+    .main-btn:hover,
+    .secondary-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .secondary-btn:hover {
+      border-color: var(--green);
     }
 
     .kpis {
@@ -246,19 +277,54 @@
 
     main {
       display: grid;
-      grid-template-rows: 1fr 245px;
+      grid-template-rows: minmax(0, 1fr) 245px;
       min-width: 0;
     }
 
     .map-wrap {
       position: relative;
       border-bottom: 1px solid var(--map-border);
+      min-height: 0;
     }
 
     #map {
       width: 100%;
       height: 100%;
       background: #0b1727;
+    }
+
+    .leaflet-container {
+      cursor: grab;
+      font-family: Inter, Segoe UI, Roboto, Arial, sans-serif;
+    }
+
+    .leaflet-container.map-dragging {
+      cursor: grabbing !important;
+    }
+
+    .leaflet-container.map-clickable {
+      cursor: pointer !important;
+    }
+
+    .leaflet-interactive {
+      cursor: pointer;
+    }
+
+    .tree-tooltip {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 6px 8px;
+      box-shadow: var(--shadow);
+      font-size: 12px;
+      font-weight: 750;
+      line-height: 1.4;
+    }
+
+    body.light-theme .tree-tooltip {
+      background: #ffffff;
+      color: #172033;
     }
 
     .map-guide {
@@ -273,6 +339,7 @@
       padding: 15px 17px;
       box-shadow: var(--shadow);
       color: #e8f1ff;
+      pointer-events: none;
     }
 
     body.light-theme .map-guide {
@@ -292,6 +359,19 @@
       color: var(--muted);
       font-size: 13px;
       line-height: 1.45;
+    }
+
+    .map-hint {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      margin-top: 10px;
+      padding: 6px 9px;
+      border-radius: 999px;
+      background: rgba(43, 216, 132, 0.12);
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 800;
     }
 
     .legend {
@@ -386,6 +466,7 @@
       border-bottom: 1px solid rgba(255,255,255,0.08);
       padding: 7px 4px;
       text-align: left;
+      vertical-align: top;
     }
 
     body.light-theme td,
@@ -445,6 +526,12 @@
       background: var(--panel);
       color: var(--text);
       border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    .leaflet-popup-content {
+      margin: 13px 15px;
+      font-family: Inter, Segoe UI, Roboto, Arial, sans-serif;
     }
 
     .popup-title {
@@ -566,6 +653,13 @@
         overflow: auto;
       }
 
+      header {
+        height: auto;
+        min-height: 60px;
+        padding: 10px 14px;
+        align-items: flex-start;
+      }
+
       .layout {
         grid-template-columns: 1fr;
         height: auto;
@@ -573,6 +667,8 @@
 
       aside.sidebar {
         height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
       }
 
       main {
@@ -594,6 +690,29 @@
 
       .brand-subtitle {
         display: none;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .status {
+        display: none;
+      }
+
+      .brand-title {
+        font-size: 14px;
+        white-space: normal;
+      }
+
+      .kpis {
+        grid-template-columns: 1fr;
+      }
+
+      .legend {
+        font-size: 11px;
+      }
+
+      main {
+        grid-template-rows: 62vh auto;
       }
     }
   </style>
@@ -662,14 +781,17 @@
             <strong id="kpiCount">—</strong>
             <span>Arbres affichés</span>
           </div>
+
           <div class="kpi">
             <strong id="kpiAvgDiameter">—</strong>
             <span>Diamètre moyen</span>
           </div>
+
           <div class="kpi">
             <strong id="kpiFeuillu">—</strong>
             <span>Feuillus</span>
           </div>
+
           <div class="kpi">
             <strong id="kpiConifere">—</strong>
             <span>Conifères</span>
@@ -704,6 +826,7 @@
             Le dashboard identifiera les voisins les plus similaires selon leurs caractéristiques spatiales,
             botaniques et descriptives.
           </p>
+          <div class="map-hint">Survolez un arbre pour voir le détail · Cliquez pour le sélectionner</div>
         </div>
 
         <div class="legend">
@@ -758,7 +881,8 @@
         <ul>
           <li>Utilisez les filtres du panneau de gauche.</li>
           <li>Zoomez et déplacez-vous sur la carte.</li>
-          <li>Cliquez sur un arbre pour le sélectionner.</li>
+          <li>Survolez un arbre pour obtenir un aperçu rapide.</li>
+          <li>Cliquez sur un arbre pour le sélectionner comme référence.</li>
           <li>Consultez les arbres similaires dans le panneau du bas.</li>
         </ul>
       </section>
@@ -818,6 +942,16 @@
       maxZoom: 19,
       attribution: "&copy; OpenStreetMap contributors"
     }).addTo(map);
+
+    const mapContainer = map.getContainer();
+
+    map.on("dragstart", () => {
+      mapContainer.classList.add("map-dragging");
+    });
+
+    map.on("dragend", () => {
+      mapContainer.classList.remove("map-dragging");
+    });
 
     markersLayer = L.layerGroup().addTo(map);
 
@@ -930,15 +1064,31 @@
 
         const selected = tree.ID === selectedTreeId;
         const neighbor = neighborIds.has(tree.ID);
-        const radius = selected ? 9 : neighbor ? 7 : 4;
+        const baseRadius = selected ? 9 : neighbor ? 7 : 4;
+        const baseColor = colorByType(tree.TYPE_ARBRE, selected, neighbor);
 
         const marker = L.circleMarker([tree.LATITUDE, tree.LONGITUDE], {
-          radius,
-          color: colorByType(tree.TYPE_ARBRE, selected, neighbor),
-          fillColor: colorByType(tree.TYPE_ARBRE, selected, neighbor),
+          radius: baseRadius,
+          color: baseColor,
+          fillColor: baseColor,
           weight: selected || neighbor ? 3 : 1,
-          fillOpacity: selected || neighbor ? 0.95 : 0.55
+          fillOpacity: selected || neighbor ? 0.95 : 0.55,
+          interactive: true
         });
+
+        marker.bindTooltip(
+          `
+            <strong>${tree.NOM_FRANCAIS || "Espèce non précisée"}</strong><br>
+            ${tree.TYPE_ARBRE || "Type non précisé"} · ${fmt(tree.DIAMETRE)} cm<br>
+            Cliquez pour utiliser cet arbre comme référence K-NN
+          `,
+          {
+            direction: "top",
+            offset: [0, -8],
+            opacity: 0.96,
+            className: "tree-tooltip"
+          }
+        );
 
         marker.bindPopup(`
           <div class="popup-title">${tree.NOM_FRANCAIS || "Espèce non précisée"}</div>
@@ -951,6 +1101,35 @@
             Cet arbre est maintenant utilisé comme référence K-NN.
           </div>
         `);
+
+        marker.on("mouseover", function () {
+          map.getContainer().classList.add("map-clickable");
+
+          this.setRadius(baseRadius + 4);
+          this.setStyle({
+            color: "#ffb454",
+            fillColor: "#ffb454",
+            weight: 3,
+            fillOpacity: 0.95
+          });
+
+          this.bringToFront();
+          this.openTooltip();
+        });
+
+        marker.on("mouseout", function () {
+          map.getContainer().classList.remove("map-clickable");
+
+          this.setRadius(baseRadius);
+          this.setStyle({
+            color: baseColor,
+            fillColor: baseColor,
+            weight: selected || neighbor ? 3 : 1,
+            fillOpacity: selected || neighbor ? 0.95 : 0.55
+          });
+
+          this.closeTooltip();
+        });
 
         marker.on("click", () => {
           selectTree(tree.ID);
@@ -1025,6 +1204,7 @@
 
     function updateKpis() {
       const count = filteredTrees.length;
+
       const avgDiameter = filteredTrees.reduce((sum, tree) => {
         return sum + Number(tree.DIAMETRE || 0);
       }, 0) / Math.max(count, 1);
@@ -1110,10 +1290,15 @@
       document.body.classList.toggle("light-theme");
       const isLight = document.body.classList.contains("light-theme");
       document.getElementById("themeToggle").textContent = isLight ? "🌙" : "☀";
+
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 120);
     }
 
     document.getElementById("applyFilters").addEventListener("click", applyFilters);
     document.getElementById("resetFilters").addEventListener("click", resetFilters);
+
     document.getElementById("kNeighbors").addEventListener("change", () => {
       renderReference();
       renderMap();
@@ -1129,6 +1314,7 @@
         if (!response.ok) {
           throw new Error("dashboard_data.json introuvable");
         }
+
         return response.json();
       })
       .then(data => {
@@ -1152,8 +1338,14 @@
               .map(tree => [tree.LATITUDE, tree.LONGITUDE])
           );
 
-          map.fitBounds(bounds, { padding: [30, 30] });
+          map.fitBounds(bounds, {
+            padding: [30, 30]
+          });
         }
+
+        setTimeout(() => {
+          map.invalidateSize();
+        }, 150);
       })
       .catch(error => {
         statusEl.textContent = "JSON non généré";
