@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Québec Urban Trees K-NN Dashboard</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    :root {
+      --bg: #07111f;
+      --panel: #0f1b2d;
+      --panel-2: #13233a;
+      --text: #e8f1ff;
+      --muted: #9fb3c8;
+      --line: #2a3c55;
+      --green: #2bd884;
+      --blue: #4aa3ff;
+      --orange: #ffb454;
+      --red: #ff6b7a;
+      --shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+      --map-border: #2a3c55;
+    }
+
+    body.light-theme {
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --panel-2: #edf3fb;
+      --text: #172033;
+      --muted: #5d6f86;
+      --line: #d8e1ee;
+      --shadow: 0 14px 34px rgba(23, 32, 51, 0.12);
+      --map-border: #cfd9e6;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      overflow: hidden;
+    }
+
+    header {
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 18px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--line);
+      z-index: 1000;
+      position: relative;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 18px rgba(43, 216, 132, 0.7);
+      flex: 0 0 auto;
+    }
+
+    .brand-title {
+      font-weight: 850;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+    }
+
+    .brand-subtitle {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 3px;
+      white-space: nowrap;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status {
+      border: 1px solid rgba(43, 216, 132, 0.45);
+      color: var(--green);
+      background: rgba(43, 216, 132, 0.08);
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .icon-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      font-size: 18px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow);
+    }
+
+    .icon-btn:hover {
+      border-color: var(--green);
+    }
+
+    .layout {
+      height: calc(100vh - 60px);
+      display: grid;
+      grid-template-columns: 340px 1fr;
+    }
+
+    aside.sidebar {
+      background: var(--panel);
+      border-right: 1px solid var(--line);
+      padding: 16px;
+      overflow-y: auto;
+    }
+
+    .panel {
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 15px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow);
+    }
+
+    body.light-theme .panel {
+      background: #ffffff;
+    }
+
+    .panel h3 {
+      margin: 0 0 12px;
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+    }
+
+    .intro-box {
+      border-left: 3px solid var(--green);
+      padding-left: 11px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      color: var(--text);
+      margin: 12px 0 7px;
+      font-weight: 750;
+    }
+
+    select,
+    input {
+      width: 100%;
+      padding: 10px 11px;
+      border-radius: 11px;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--text);
+      outline: none;
+      font-weight: 650;
+    }
+
+    .main-btn {
+      width: 100%;
+      padding: 12px 14px;
+      border: 0;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #1f8fff, #2bd884);
+      color: #04111f;
+      font-weight: 900;
+      cursor: pointer;
+      margin-top: 14px;
+    }
+
+    .secondary-btn {
+      width: 100%;
+      padding: 11px 14px;
+      border-radius: 12px;
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--line);
+      font-weight: 800;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+
+    .kpi {
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .kpi strong {
+      display: block;
+      font-size: 23px;
+      letter-spacing: -0.04em;
+    }
+
+    .kpi span {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 650;
+    }
+
+    .small-note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    main {
+      display: grid;
+      grid-template-rows: 1fr 245px;
+      min-width: 0;
+    }
+
+    .map-wrap {
+      position: relative;
+      border-bottom: 1px solid var(--map-border);
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+      background: #0b1727;
+    }
+
+    .map-guide {
+      position: absolute;
+      left: 18px;
+      top: 18px;
+      z-index: 500;
+      max-width: 560px;
+      background: rgba(15, 27, 45, 0.94);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 18px;
+      padding: 15px 17px;
+      box-shadow: var(--shadow);
+      color: #e8f1ff;
+    }
+
+    body.light-theme .map-guide {
+      background: rgba(255,255,255,0.94);
+      color: #172033;
+      border: 1px solid #d8e1ee;
+    }
+
+    .map-guide h1 {
+      margin: 0 0 7px;
+      font-size: 25px;
+      letter-spacing: -0.04em;
+    }
+
+    .map-guide p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .legend {
+      position: absolute;
+      right: 16px;
+      top: 18px;
+      z-index: 500;
+      background: rgba(15, 27, 45, 0.94);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 14px;
+      padding: 10px 12px;
+      color: #e8f1ff;
+      font-size: 12px;
+      box-shadow: var(--shadow);
+    }
+
+    body.light-theme .legend {
+      background: rgba(255,255,255,0.94);
+      color: #172033;
+      border: 1px solid #d8e1ee;
+    }
+
+    .legend div {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin: 4px 0;
+    }
+
+    .dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .bottom {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr 1fr;
+      gap: 14px;
+      padding: 14px;
+      background: var(--bg);
+      overflow: hidden;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 14px;
+      overflow-y: auto;
+      box-shadow: var(--shadow);
+    }
+
+    .card h3 {
+      margin: 0 0 12px;
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+    }
+
+    .reference-title {
+      font-size: 18px;
+      font-weight: 850;
+      margin-bottom: 4px;
+    }
+
+    .reference-meta {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+      margin-bottom: 10px;
+    }
+
+    .knn-note {
+      display: block;
+      margin: 8px 0 12px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    td,
+    th {
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding: 7px 4px;
+      text-align: left;
+    }
+
+    body.light-theme td,
+    body.light-theme th {
+      border-bottom: 1px solid #e2e9f2;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+
+    .bar-row {
+      margin-bottom: 10px;
+    }
+
+    .bar-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+
+    .bar-label span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .bar-track {
+      height: 8px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    body.light-theme .bar-track {
+      background: #e4ebf5;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: var(--green);
+      border-radius: 99px;
+    }
+
+    .empty {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .leaflet-popup-content-wrapper,
+    .leaflet-popup-tip {
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+
+    .popup-title {
+      font-weight: 850;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .popup-meta {
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+
+    .help-panel {
+      position: fixed;
+      top: 0;
+      right: -460px;
+      width: 440px;
+      max-width: calc(100vw - 30px);
+      height: 100vh;
+      background: #ffffff;
+      color: #172033;
+      box-shadow: -10px 0 30px rgba(0,0,0,0.22);
+      z-index: 1500;
+      transition: right 0.28s ease;
+      overflow-y: auto;
+      border-left: 1px solid #d8e1ee;
+    }
+
+    .help-panel.open {
+      right: 0;
+    }
+
+    .help-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 20px;
+      border-bottom: 1px solid #d8e1ee;
+      background: #ffffff;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+
+    .help-header h2 {
+      margin: 0;
+      font-size: 22px;
+      letter-spacing: -0.03em;
+    }
+
+    .help-close {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: 1px solid #d8e1ee;
+      background: #f4f7fb;
+      color: #172033;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    .help-content {
+      padding: 20px;
+    }
+
+    .help-content section {
+      margin-bottom: 26px;
+      border-left: 3px solid #2bd884;
+      padding-left: 13px;
+    }
+
+    .help-content h3 {
+      margin: 0 0 10px;
+      color: #172033;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .help-content p,
+    .help-content li {
+      font-size: 14px;
+      line-height: 1.7;
+      color: #29364d;
+    }
+
+    .help-content ul {
+      padding-left: 18px;
+      margin: 0;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #eaf7f1;
+      color: #0f8050;
+      font-weight: 800;
+      font-size: 12px;
+      margin: 2px 4px 2px 0;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.25);
+      z-index: 1400;
+      display: none;
+    }
+
+    .overlay.open {
+      display: block;
+    }
+
+    @media (max-width: 1050px) {
+      body {
+        overflow: auto;
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+
+      aside.sidebar {
+        height: auto;
+      }
+
+      main {
+        grid-template-rows: 70vh auto;
+      }
+
+      .bottom {
+        grid-template-columns: 1fr;
+      }
+
+      .map-guide {
+        display: none;
+      }
+
+      .legend {
+        top: 14px;
+        right: 14px;
+      }
+
+      .brand-subtitle {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="brand">
+      <div class="brand-dot"></div>
+      <div>
+        <div class="brand-title">Québec Urban Trees K-NN Dashboard</div>
+        <span class="brand-subtitle">Données ouvertes · API CKAN · Similarité d’arbres · K-NN · Leaflet.js</span>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <div class="status" id="status">Chargement du JSON...</div>
+      <button id="themeToggle" class="icon-btn" title="Changer le thème">☀</button>
+      <button id="helpToggle" class="icon-btn" title="À propos de l'application">?</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="panel">
+        <h3>Objectif</h3>
+        <div class="intro-box">
+          Explorez les arbres répertoriés de la Ville de Québec. Zoomez sur la carte et cliquez sur un arbre :
+          le dashboard affichera les arbres les plus similaires selon K-NN.
+        </div>
+
+        <h3>Paramètres</h3>
+
+        <label for="typeArbre">Type d’arbre</label>
+        <select id="typeArbre"></select>
+
+        <label for="typeLieu">Type de lieu</label>
+        <select id="typeLieu"></select>
+
+        <label for="typeProp">Type de propriété</label>
+        <select id="typeProp"></select>
+
+        <label for="species">Espèce</label>
+        <select id="species"></select>
+
+        <label for="diameterMin">Diamètre minimal</label>
+        <input id="diameterMin" type="number" placeholder="Ex. 20" />
+
+        <label for="kNeighbors">Nombre de voisins K</label>
+        <select id="kNeighbors">
+          <option value="5" selected>5 voisins</option>
+          <option value="10">10 voisins</option>
+          <option value="15">15 voisins</option>
+          <option value="20">20 voisins</option>
+          <option value="30">30 voisins</option>
+        </select>
+
+        <button id="applyFilters" class="main-btn">Appliquer les filtres</button>
+        <button id="resetFilters" class="secondary-btn">Réinitialiser</button>
+      </div>
+
+      <div class="panel">
+        <h3>Indicateurs</h3>
+        <div class="kpis">
+          <div class="kpi">
+            <strong id="kpiCount">—</strong>
+            <span>Arbres affichés</span>
+          </div>
+          <div class="kpi">
+            <strong id="kpiAvgDiameter">—</strong>
+            <span>Diamètre moyen</span>
+          </div>
+          <div class="kpi">
+            <strong id="kpiFeuillu">—</strong>
+            <span>Feuillus</span>
+          </div>
+          <div class="kpi">
+            <strong id="kpiConifere">—</strong>
+            <span>Conifères</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Modèle K-NN</h3>
+        <div class="small-note" id="modelInfo">
+          Le modèle K-NN est préparé par Python à partir des données chargées via l’API CKAN.
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Lecture des résultats</h3>
+        <div class="small-note">
+          La distance K-NN n’est pas une distance en kilomètres. Elle représente une distance de similarité calculée
+          à partir de plusieurs variables. Plus elle est faible, plus l’arbre est similaire à l’arbre sélectionné.
+        </div>
+      </div>
+    </aside>
+
+    <main>
+      <div class="map-wrap">
+        <div id="map"></div>
+
+        <div class="map-guide">
+          <h1>Explorer les arbres similaires avec K-NN</h1>
+          <p>
+            Filtrez les arbres, zoomez sur la carte et cliquez sur un arbre.
+            Le dashboard identifiera les voisins les plus similaires selon leurs caractéristiques spatiales,
+            botaniques et descriptives.
+          </p>
+        </div>
+
+        <div class="legend">
+          <div><span class="dot" style="background:#2bd884"></span> Feuillu</div>
+          <div><span class="dot" style="background:#4aa3ff"></span> Conifère</div>
+          <div><span class="dot" style="background:#ffb454"></span> Arbre sélectionné</div>
+          <div><span class="dot" style="background:#ff6b7a"></span> Arbres similaires</div>
+        </div>
+      </div>
+
+      <section class="bottom">
+        <div class="card">
+          <h3>Arbre sélectionné et arbres similaires</h3>
+          <div id="referenceInfo" class="empty">
+            Cliquez sur un arbre de la carte pour afficher les arbres les plus similaires selon K-NN.
+          </div>
+          <table id="neighborsTable"></table>
+        </div>
+
+        <div class="card">
+          <h3>Types</h3>
+          <div id="typeBars"></div>
+        </div>
+
+        <div class="card">
+          <h3>Top espèces</h3>
+          <div id="speciesBars"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="overlay" class="overlay"></div>
+
+  <aside id="helpPanel" class="help-panel">
+    <div class="help-header">
+      <h2>À propos de l’application</h2>
+      <button id="closeHelp" class="help-close" title="Fermer">×</button>
+    </div>
+
+    <div class="help-content">
+      <section>
+        <h3>Objectif</h3>
+        <p>
+          Ce dashboard permet d’explorer les arbres répertoriés de la Ville de Québec et d’identifier,
+          à l’aide de l’algorithme K-Nearest Neighbors, les arbres les plus similaires à un arbre sélectionné.
+        </p>
+      </section>
+
+      <section>
+        <h3>Comment l’utiliser</h3>
+        <ul>
+          <li>Utilisez les filtres du panneau de gauche.</li>
+          <li>Zoomez et déplacez-vous sur la carte.</li>
+          <li>Cliquez sur un arbre pour le sélectionner.</li>
+          <li>Consultez les arbres similaires dans le panneau du bas.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h3>Rôle de K-NN</h3>
+        <p>
+          K-NN compare l’arbre sélectionné aux autres arbres à partir de plusieurs caractéristiques :
+          diamètre, type d’arbre, type de lieu, type de propriété, coordonnées géographiques et autres variables disponibles.
+        </p>
+        <span class="tag">K-NN</span>
+        <span class="tag">similarité</span>
+        <span class="tag">données ouvertes</span>
+        <span class="tag">géospatial</span>
+      </section>
+
+      <section>
+        <h3>Distance K-NN</h3>
+        <p>
+          La distance K-NN est un score de similarité. Elle ne correspond pas directement à une distance en kilomètres.
+          Plus cette distance est faible, plus l’arbre voisin est proche du profil de l’arbre sélectionné.
+        </p>
+      </section>
+
+      <section>
+        <h3>Jeu de données</h3>
+        <p>
+          Les données proviennent du portail Données Québec, à partir du jeu de données des arbres répertoriés
+          de la Ville de Québec, accessible par API CKAN.
+        </p>
+      </section>
+
+      <section>
+        <h3>Finalité pédagogique</h3>
+        <p>
+          Ce projet illustre une utilisation concrète de la science des données, de l’exploration cartographique
+          et de l’apprentissage automatique dans une application web interactive.
+        </p>
+      </section>
+    </div>
+  </aside>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    let DATA = null;
+    let trees = [];
+    let filteredTrees = [];
+    let selectedTreeId = null;
+    let markersLayer = null;
+
+    const map = L.map("map", {
+      preferCanvas: true
+    }).setView([46.8139, -71.2080], 11);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap contributors"
+    }).addTo(map);
+
+    markersLayer = L.layerGroup().addTo(map);
+
+    const statusEl = document.getElementById("status");
+
+    function fmt(value, decimals = 0) {
+      if (value === null || value === undefined || Number.isNaN(Number(value))) {
+        return "—";
+      }
+
+      return Number(value).toLocaleString("fr-CA", {
+        maximumFractionDigits: decimals
+      });
+    }
+
+    function colorByType(type, selected = false, neighbor = false) {
+      if (selected) return "#ffb454";
+      if (neighbor) return "#ff6b7a";
+      if (type === "Conifère") return "#4aa3ff";
+      return "#2bd884";
+    }
+
+    function fillSelect(id, values, labelAll) {
+      const select = document.getElementById(id);
+      select.innerHTML = "";
+
+      const allOption = document.createElement("option");
+      allOption.value = "";
+      allOption.textContent = labelAll;
+      select.appendChild(allOption);
+
+      values.forEach(value => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value;
+        select.appendChild(option);
+      });
+    }
+
+    function initFilters() {
+      fillSelect("typeArbre", DATA.filters.type_arbre || [], "Tous");
+      fillSelect("typeLieu", DATA.filters.type_lieu || [], "Tous");
+      fillSelect("typeProp", DATA.filters.type_prop || [], "Toutes");
+      fillSelect("species", DATA.filters.nom_francais || [], "Toutes");
+    }
+
+    function applyFilters() {
+      const typeArbre = document.getElementById("typeArbre").value;
+      const typeLieu = document.getElementById("typeLieu").value;
+      const typeProp = document.getElementById("typeProp").value;
+      const species = document.getElementById("species").value;
+      const diameterMin = Number(document.getElementById("diameterMin").value || 0);
+
+      filteredTrees = trees.filter(tree => {
+        if (typeArbre && tree.TYPE_ARBRE !== typeArbre) return false;
+        if (typeLieu && tree.TYPE_LIEU !== typeLieu) return false;
+        if (typeProp && tree.TYPE_PROP !== typeProp) return false;
+        if (species && tree.NOM_FRANCAIS !== species) return false;
+        if (diameterMin && Number(tree.DIAMETRE || 0) < diameterMin) return false;
+        return true;
+      });
+
+      if (selectedTreeId && !filteredTrees.some(tree => tree.ID === selectedTreeId)) {
+        selectedTreeId = null;
+      }
+
+      updateKpis();
+      renderBars();
+      renderReference();
+      renderMap();
+    }
+
+    function resetFilters() {
+      document.getElementById("typeArbre").value = "";
+      document.getElementById("typeLieu").value = "";
+      document.getElementById("typeProp").value = "";
+      document.getElementById("species").value = "";
+      document.getElementById("diameterMin").value = "";
+      selectedTreeId = null;
+      filteredTrees = [...trees];
+
+      updateKpis();
+      renderBars();
+      renderReference();
+      renderMap();
+    }
+
+    function getNeighborIds() {
+      if (!selectedTreeId || !DATA.neighbors[selectedTreeId]) {
+        return new Set();
+      }
+
+      const k = Number(document.getElementById("kNeighbors").value);
+      return new Set(DATA.neighbors[selectedTreeId].slice(0, k).map(item => item.id));
+    }
+
+    function selectTree(id) {
+      selectedTreeId = id;
+      renderReference();
+      renderMap();
+    }
+
+    function renderMap() {
+      markersLayer.clearLayers();
+
+      const neighborIds = getNeighborIds();
+
+      filteredTrees.forEach(tree => {
+        if (!tree.LATITUDE || !tree.LONGITUDE) return;
+
+        const selected = tree.ID === selectedTreeId;
+        const neighbor = neighborIds.has(tree.ID);
+        const radius = selected ? 9 : neighbor ? 7 : 4;
+
+        const marker = L.circleMarker([tree.LATITUDE, tree.LONGITUDE], {
+          radius,
+          color: colorByType(tree.TYPE_ARBRE, selected, neighbor),
+          fillColor: colorByType(tree.TYPE_ARBRE, selected, neighbor),
+          weight: selected || neighbor ? 3 : 1,
+          fillOpacity: selected || neighbor ? 0.95 : 0.55
+        });
+
+        marker.bindPopup(`
+          <div class="popup-title">${tree.NOM_FRANCAIS || "Espèce non précisée"}</div>
+          <div class="popup-meta">
+            <em>${tree.NOM_LATIN || ""}</em><br/>
+            Type : ${tree.TYPE_ARBRE || "—"}<br/>
+            Diamètre : ${fmt(tree.DIAMETRE)} cm<br/>
+            Lieu : ${tree.TYPE_LIEU || "—"}<br/>
+            Propriété : ${tree.TYPE_PROP || "—"}<br/>
+            Cet arbre est maintenant utilisé comme référence K-NN.
+          </div>
+        `);
+
+        marker.on("click", () => {
+          selectTree(tree.ID);
+        });
+
+        marker.addTo(markersLayer);
+      });
+    }
+
+    function renderReference() {
+      const box = document.getElementById("referenceInfo");
+      const table = document.getElementById("neighborsTable");
+      table.innerHTML = "";
+
+      if (!selectedTreeId) {
+        box.innerHTML = `
+          Cliquez sur un arbre de la carte pour afficher les arbres les plus similaires selon K-NN.
+          <span class="knn-note">
+            Les arbres similaires apparaîtront en rouge sur la carte et dans le tableau.
+          </span>
+        `;
+        return;
+      }
+
+      const ref = trees.find(tree => tree.ID === selectedTreeId);
+
+      if (!ref) {
+        box.innerHTML = "Arbre sélectionné introuvable.";
+        return;
+      }
+
+      box.innerHTML = `
+        <div class="reference-title">${ref.NOM_FRANCAIS || "Espèce non précisée"}</div>
+        <div class="reference-meta">
+          <em>${ref.NOM_LATIN || ""}</em><br/>
+          Type : ${ref.TYPE_ARBRE || "—"} · Diamètre : ${fmt(ref.DIAMETRE)} cm<br/>
+          Lieu : ${ref.TYPE_LIEU || "—"} · Propriété : ${ref.TYPE_PROP || "—"}
+        </div>
+        <span class="knn-note">
+          Les arbres ci-dessous sont les plus similaires selon K-NN.
+          Plus la distance K-NN est faible, plus l’arbre ressemble à l’arbre sélectionné.
+        </span>
+      `;
+
+      const k = Number(document.getElementById("kNeighbors").value);
+      const neighbors = (DATA.neighbors[selectedTreeId] || []).slice(0, k);
+      const treeById = new Map(trees.map(tree => [tree.ID, tree]));
+
+      table.innerHTML = `
+        <tr>
+          <th>Arbre similaire</th>
+          <th>Type</th>
+          <th>Diamètre</th>
+          <th>Distance K-NN</th>
+        </tr>
+      `;
+
+      neighbors.forEach(neighbor => {
+        const tree = treeById.get(neighbor.id);
+        if (!tree) return;
+
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${tree.NOM_FRANCAIS || "—"}</td>
+          <td>${tree.TYPE_ARBRE || "—"}</td>
+          <td>${fmt(tree.DIAMETRE)} cm</td>
+          <td>${fmt(neighbor.distance, 2)}</td>
+        `;
+        table.appendChild(row);
+      });
+    }
+
+    function updateKpis() {
+      const count = filteredTrees.length;
+      const avgDiameter = filteredTrees.reduce((sum, tree) => {
+        return sum + Number(tree.DIAMETRE || 0);
+      }, 0) / Math.max(count, 1);
+
+      const feuillu = filteredTrees.filter(tree => tree.TYPE_ARBRE === "Feuillu").length;
+      const conifere = filteredTrees.filter(tree => tree.TYPE_ARBRE === "Conifère").length;
+
+      document.getElementById("kpiCount").textContent = fmt(count);
+      document.getElementById("kpiAvgDiameter").textContent = `${fmt(avgDiameter, 1)} cm`;
+      document.getElementById("kpiFeuillu").textContent = fmt(feuillu);
+      document.getElementById("kpiConifere").textContent = fmt(conifere);
+    }
+
+    function groupCount(items, key) {
+      const counts = new Map();
+
+      items.forEach(item => {
+        const value = item[key] || "Non précisé";
+        counts.set(value, (counts.get(value) || 0) + 1);
+      });
+
+      return Array.from(counts.entries())
+        .map(([label, count]) => ({ label, count }))
+        .sort((a, b) => b.count - a.count);
+    }
+
+    function renderBars() {
+      renderBarChart("typeBars", groupCount(filteredTrees, "TYPE_ARBRE").slice(0, 8));
+      renderBarChart("speciesBars", groupCount(filteredTrees, "NOM_FRANCAIS").slice(0, 10));
+    }
+
+    function renderBarChart(id, data) {
+      const container = document.getElementById(id);
+      container.innerHTML = "";
+
+      if (!data.length) {
+        container.innerHTML = `<div class="empty">Aucune donnée à afficher.</div>`;
+        return;
+      }
+
+      const max = Math.max(...data.map(item => item.count), 1);
+
+      data.forEach(item => {
+        const row = document.createElement("div");
+        row.className = "bar-row";
+        row.innerHTML = `
+          <div class="bar-label">
+            <span>${item.label}</span>
+            <strong>${fmt(item.count)}</strong>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill" style="width:${(item.count / max) * 100}%"></div>
+          </div>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function initModelInfo() {
+      const model = DATA.model || {};
+      const best = (model.model_results || []).find(item => item.k === model.best_k);
+
+      document.getElementById("modelInfo").innerHTML = `
+        Cible : ${model.target || "TYPE_ARBRE"}<br/>
+        Meilleur K : ${model.best_k || "—"}<br/>
+        F1 macro : ${best ? best.f1_macro : "—"}<br/>
+        Balanced accuracy : ${best ? best.balanced_accuracy : "—"}<br/>
+        Variables : ${(model.features || []).join(", ")}
+      `;
+    }
+
+    function openHelp() {
+      document.getElementById("helpPanel").classList.add("open");
+      document.getElementById("overlay").classList.add("open");
+    }
+
+    function closeHelpPanel() {
+      document.getElementById("helpPanel").classList.remove("open");
+      document.getElementById("overlay").classList.remove("open");
+    }
+
+    function toggleTheme() {
+      document.body.classList.toggle("light-theme");
+      const isLight = document.body.classList.contains("light-theme");
+      document.getElementById("themeToggle").textContent = isLight ? "🌙" : "☀";
+    }
+
+    document.getElementById("applyFilters").addEventListener("click", applyFilters);
+    document.getElementById("resetFilters").addEventListener("click", resetFilters);
+    document.getElementById("kNeighbors").addEventListener("change", () => {
+      renderReference();
+      renderMap();
+    });
+
+    document.getElementById("helpToggle").addEventListener("click", openHelp);
+    document.getElementById("closeHelp").addEventListener("click", closeHelpPanel);
+    document.getElementById("overlay").addEventListener("click", closeHelpPanel);
+    document.getElementById("themeToggle").addEventListener("click", toggleTheme);
+
+    fetch("dashboard_data.json")
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("dashboard_data.json introuvable");
+        }
+        return response.json();
+      })
+      .then(data => {
+        DATA = data;
+        trees = data.trees || [];
+        filteredTrees = [...trees];
+
+        statusEl.textContent = `JSON chargé · ${fmt(trees.length)} arbres`;
+
+        initFilters();
+        initModelInfo();
+        updateKpis();
+        renderBars();
+        renderReference();
+        renderMap();
+
+        if (trees.length) {
+          const bounds = L.latLngBounds(
+            trees
+              .filter(tree => tree.LATITUDE && tree.LONGITUDE)
+              .map(tree => [tree.LATITUDE, tree.LONGITUDE])
+          );
+
+          map.fitBounds(bounds, { padding: [30, 30] });
+        }
+      })
+      .catch(error => {
+        statusEl.textContent = "JSON non généré";
+        document.getElementById("referenceInfo").innerHTML = `
+          <strong>dashboard_data.json est introuvable.</strong><br/>
+          Exécutez d’abord : <code>python build_dashboard_data.py</code>
+        `;
+        console.error(error);
+      });
+  </script>
+</body>
+</html>
